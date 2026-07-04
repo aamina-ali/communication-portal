@@ -196,6 +196,7 @@
                                                 <button type="submit" class="btn btn-sm btn-secondary" style="color: #dc2626;">Decline</button>
                                             </form>
                                         </div>
+                                        @endif
                                     @endif
 
                                     @if($notif->type === 'workspace_invite')
