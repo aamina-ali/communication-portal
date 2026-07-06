@@ -46,6 +46,7 @@ class DirectMessageSent implements ShouldBroadcastNow
                 'username'   => $this->message->sender->username,
                 'avatar_url' => $this->message->sender->avatar_url,
             ],
+            'files'           => $this->message->files ? $this->message->files->toArray() : [],
         ];
     }
 }

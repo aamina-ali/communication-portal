@@ -22,9 +22,13 @@
         @forelse($messages as $msg)
         @php $isMine = ($msg['sender_id'] ?? null) == auth()->user()->user_id; @endphp
         <div class="flex items-start gap-3 group px-2 py-1.5 rounded-lg hover:bg-white transition-colors {{ $isMine ? 'flex-row-reverse' : '' }}">
-            <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5"
+            <div class="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5"
                  style="background: {{ $isMine ? 'var(--color-accent-600)' : 'var(--color-accent-800)' }}; color: white;">
-                {{ strtoupper(substr($msg['sender']['username'] ?? '?', 0, 1)) }}
+                @if(!empty($msg['sender']['avatar_url']))
+                    <img src="{{ $msg['sender']['avatar_url'] }}" alt="{{ $msg['sender']['username'] }}" class="w-full h-full object-cover">
+                @else
+                    {{ strtoupper(substr($msg['sender']['username'] ?? '?', 0, 1)) }}
+                @endif
             </div>
             <div class="min-w-0 max-w-xs lg:max-w-md {{ $isMine ? 'items-end' : 'items-start' }} flex flex-col">
                 <div class="flex items-baseline gap-2 {{ $isMine ? 'flex-row-reverse' : '' }}">
@@ -102,8 +106,98 @@
     @endif
 
     {{-- Message composer --}}
-    <div class="p-4 border-t flex-shrink-0" style="background: white; border-color: var(--color-border);"
-         x-data="{ showEmoji: false, emojis: ['😀','😂','😍','👍','👎','🎉','🔥','❤️','💯','😢','😮','🤔','👀','🚀','✅','❌','⭐','💡','📎','🎯'] }">
+    <div class="p-4 border-t flex-shrink-0 relative" style="background: white; border-color: var(--color-border);"
+         x-data="{
+             showEmoji: false,
+             emojis: ['😀','😂','😍','👍','👎','🎉','🔥','❤️','💯','😢','😮','🤔','👀','🚀','✅','❌','⭐','💡','📎','🎯'],
+             mentionsOpen: false,
+             mentionQuery: '',
+             mentionUsers: [],
+             mentionIndex: 0,
+             mentionStartIdx: -1,
+             textarea: null,
+             init() {
+                 this.textarea = this.$el.querySelector('textarea');
+                 if (this.textarea) {
+                     this.textarea.addEventListener('input', () => this.handleInput());
+                     this.textarea.addEventListener('keydown', (e) => this.handleKeydown(e));
+                 }
+             },
+             handleInput() {
+                 const text = this.textarea.value;
+                 const cursor = this.textarea.selectionStart;
+                 const textBeforeCursor = text.slice(0, cursor);
+                 const lastAtIndex = textBeforeCursor.lastIndexOf('@');
+                 
+                 if (lastAtIndex !== -1) {
+                     const charBeforeAt = lastAtIndex > 0 ? textBeforeCursor[lastAtIndex - 1] : ' ';
+                     if (/\s/.test(charBeforeAt)) {
+                         const query = textBeforeCursor.slice(lastAtIndex + 1);
+                         if (!/\s/.test(query)) {
+                             this.mentionStartIdx = lastAtIndex;
+                             this.mentionQuery = query;
+                             this.fetchMentionSuggestions();
+                             return;
+                         }
+                     }
+                 }
+                 this.closeMentions();
+             },
+             fetchMentionSuggestions() {
+                 if (this.mentionQuery.length >= 1) {
+                     fetch(`/users/search?q=${encodeURIComponent(this.mentionQuery)}`)
+                         .then(res => res.json())
+                         .then(data => {
+                             this.mentionUsers = data;
+                             this.mentionsOpen = this.mentionUsers.length > 0;
+                             this.mentionIndex = 0;
+                         });
+                 } else {
+                     this.closeMentions();
+                 }
+             },
+             closeMentions() {
+                 this.mentionsOpen = false;
+                 this.mentionUsers = [];
+                 this.mentionIndex = 0;
+                 this.mentionStartIdx = -1;
+             },
+             selectMention(user) {
+                 const text = this.textarea.value;
+                 const cursor = this.textarea.selectionStart;
+                 const before = text.slice(0, this.mentionStartIdx);
+                 const after = text.slice(cursor);
+                 const newValue = before + '@' + user.username + ' ' + after;
+                 
+                 this.textarea.value = newValue;
+                 this.$wire.set('body', newValue);
+                 this.closeMentions();
+                 
+                 this.$nextTick(() => {
+                     this.textarea.focus();
+                     const newCursorPos = before.length + user.username.length + 2;
+                     this.textarea.setSelectionRange(newCursorPos, newCursorPos);
+                 });
+             },
+             handleKeydown(e) {
+                 if (!this.mentionsOpen) return;
+                 if (e.key === 'ArrowDown') {
+                     e.preventDefault();
+                     this.mentionIndex = (this.mentionIndex + 1) % this.mentionUsers.length;
+                 } else if (e.key === 'ArrowUp') {
+                     e.preventDefault();
+                     this.mentionIndex = (this.mentionIndex - 1 + this.mentionUsers.length) % this.mentionUsers.length;
+                 } else if (e.key === 'Enter') {
+                     e.preventDefault();
+                     if (this.mentionUsers[this.mentionIndex]) {
+                         this.selectMention(this.mentionUsers[this.mentionIndex]);
+                     }
+                 } else if (e.key === 'Escape') {
+                     e.preventDefault();
+                     this.closeMentions();
+                 }
+             }
+         }">
 
         {{-- File attachment preview --}}
         @if($attachment)
@@ -152,6 +246,33 @@
             </button>
         </div>
 
+        {{-- Mentions autocompletion dropdown --}}
+        <div x-show="mentionsOpen"
+             class="absolute bottom-20 left-4 z-50 bg-white border rounded-xl shadow-lg p-2 max-h-48 overflow-y-auto w-64 divide-y divide-gray-100"
+             style="border-color: var(--color-border);"
+             x-transition>
+            <template x-for="(u, index) in mentionUsers" :key="u.user_id">
+                <button type="button"
+                        class="w-full flex items-center gap-2 px-3 py-2 text-left text-sm transition-colors rounded-lg"
+                        :class="index === mentionIndex ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-50'"
+                        @click="selectMention(u)"
+                        @mouseenter="mentionIndex = index">
+                    <div class="w-6 h-6 rounded-full overflow-hidden bg-gray-200 flex-shrink-0 flex items-center justify-center text-xs font-bold text-white">
+                        <template x-if="u.avatar_url">
+                            <img :src="u.avatar_url" class="w-full h-full object-cover">
+                        </template>
+                        <template x-if="!u.avatar_url">
+                            <span x-text="u.username.substring(0, 1).toUpperCase()"></span>
+                        </template>
+                    </div>
+                    <div class="truncate">
+                        <span class="font-medium text-xs block" x-text="u.username"></span>
+                        <span x-show="u.name" class="text-[10px] text-gray-400 block" x-text="u.name"></span>
+                    </div>
+                </button>
+            </template>
+        </div>
+
         {{-- Emoji grid dropdown --}}
         <div x-show="showEmoji" @click.outside="showEmoji = false" x-transition
              class="absolute bottom-20 left-4 z-50 bg-white border rounded-xl shadow-lg p-3 grid grid-cols-10 gap-1"
@@ -165,5 +286,6 @@
         </div>
 
         @error('body') <p class="text-xs mt-1" style="color: #dc2626;">{{ $message }}</p> @enderror
+        @error('attachment') <p class="text-xs mt-1" style="color: #dc2626;">{{ $message }}</p> @enderror
     </div>
 </div>

@@ -103,7 +103,7 @@ class ChatWindow extends Component
         // Parse @mentions and create notifications
         $this->parseMentions($this->body ?? '', $message);
 
-        $message->load('sender');
+        $message->load(['sender', 'files', 'pins']);
 
         broadcast(new MessageSent($message))->toOthers();
 
@@ -144,11 +144,13 @@ class ChatWindow extends Component
     {
         $this->authorize('sendMessage', $this->channel);
 
-        $exists = PinnedMessage::where('pinnable_id', $messageId)
+        $pin = PinnedMessage::where('pinnable_id', $messageId)
             ->where('pinnable_type', Message::class)
-            ->exists();
+            ->first();
 
-        if (!$exists) {
+        if ($pin) {
+            $pin->delete();
+        } else {
             PinnedMessage::create([
                 'pinnable_id'   => $messageId,
                 'pinnable_type' => Message::class,

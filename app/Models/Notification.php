@@ -22,6 +22,13 @@ class Notification extends Model
         'is_seen',
     ];
 
+    protected static function booted(): void
+    {
+        static::created(function (Notification $notification) {
+            broadcast(new \App\Events\NotificationCreated($notification));
+        });
+    }
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id', 'user_id');

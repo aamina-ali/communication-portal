@@ -66,7 +66,7 @@ class FileController extends Controller
         return back()->with('success', 'File uploaded.');
     }
 
-    public function download(File $file): Response
+    public function download(File $file): \Symfony\Component\HttpFoundation\Response
     {
         $attachable = $file->attachable;
 

@@ -99,7 +99,7 @@ class DirectMessageWindow extends Component
         // Parse @mentions
         $this->parseMentions($this->body ?? '', $message);
 
-        $message->load('sender');
+        $message->load(['sender', 'files']);
         broadcast(new DirectMessageSent($message))->toOthers();
 
         $this->messages[] = $message->toArray();

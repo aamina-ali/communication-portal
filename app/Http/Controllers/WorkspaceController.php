@@ -344,6 +344,21 @@ class WorkspaceController extends Controller
 
         $joinRequest->update(['status' => 'rejected']);
 
+        // Notify workspace admins that the invitation was declined
+        $admins = WorkspaceMember::where('workspace_id', $workspace->workspace_id)
+            ->where('role', WorkspaceRole::ADMIN)
+            ->pluck('user_id');
+
+        foreach ($admins as $adminId) {
+            Notification::create([
+                'user_id'      => $adminId,
+                'sender_id'    => $userId,
+                'type'         => 'workspace_invite_rejected',
+                'workspace_id' => $workspace->workspace_id,
+                'text'         => auth()->user()->username . ' declined your invitation to join ' . $workspace->name . '.',
+            ]);
+        }
+
         return redirect()->route('workspaces.index')
             ->with('success', "Declined invitation to {$workspace->name}.");
     }

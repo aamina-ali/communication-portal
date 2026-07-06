@@ -283,6 +283,7 @@ input:focus, textarea:focus, select:focus {
     background: var(--color-accent-600);
     color: white;
     flex-shrink: 0;
+    overflow: hidden;
 }
 
 /* ── Page Header ── */

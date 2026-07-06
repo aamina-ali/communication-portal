@@ -17,7 +17,7 @@ class UserController extends Controller
     {
         $q = $request->input('q', '');
 
-        if (strlen($q) < 2) {
+        if (strlen($q) < 1) {
             return response()->json([]);
         }
 

@@ -160,7 +160,7 @@
                                          style="background: #22c55e; font-size: 0.8rem; font-weight: bold;">
                                         ✓
                                     </div>
-                                @elseif($notif->type === 'join_rejected')
+                                @elseif($notif->type === 'join_rejected' || $notif->type === 'workspace_invite_rejected')
                                     <div class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-white"
                                          style="background: #ef4444; font-size: 0.8rem; font-weight: bold;">
                                         ✕
@@ -301,6 +301,72 @@ document.addEventListener('click', function(e) {
         document.getElementById('notif-dropdown')?.classList.add('hidden');
     }
 });
+
+// ── Real-time notification listener via Echo ──
+@auth
+if (window.Echo) {
+    window.Echo.private('user.{{ auth()->user()->user_id }}')
+        .listen('.NotificationCreated', (e) => {
+            // Update badge
+            let badge = document.getElementById('notif-badge');
+            if (!badge) {
+                const bellBtn = document.querySelector('#notif-wrapper button');
+                if (bellBtn) {
+                    badge = document.createElement('span');
+                    badge.id = 'notif-badge';
+                    badge.className = 'absolute -top-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center text-white font-bold';
+                    badge.style.cssText = 'background: #ef4444; font-size: 0.55rem;';
+                    badge.textContent = '1';
+                    bellBtn.appendChild(badge);
+                }
+            } else {
+                badge.style.display = 'flex';
+                const current = parseInt(badge.textContent) || 0;
+                badge.textContent = current + 1 > 9 ? '9+' : (current + 1).toString();
+            }
+
+            // Prepend notification card into dropdown
+            const listContainer = document.querySelector('#notif-dropdown .overflow-y-auto');
+            if (listContainer) {
+                // Remove the "No notifications" empty state if present
+                const emptyState = listContainer.querySelector('.text-center');
+                if (emptyState && emptyState.closest('.px-4.py-8')) {
+                    emptyState.closest('.px-4.py-8').remove();
+                }
+
+                // Choose icon based on type
+                let iconHtml = '';
+                const senderInitial = (e.sender?.username ?? '?').substring(0, 1).toUpperCase();
+                if (e.type === 'join_request' || e.type === 'workspace_invite') {
+                    iconHtml = `<div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0" style="background: var(--color-accent-100); color: var(--color-accent-700);">${senderInitial}</div>`;
+                } else if (e.type === 'join_accepted' || e.type === 'workspace_invite_accepted') {
+                    iconHtml = `<div class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-white" style="background: #22c55e; font-size: 0.8rem; font-weight: bold;">✓</div>`;
+                } else if (e.type === 'join_rejected' || e.type === 'workspace_invite_rejected') {
+                    iconHtml = `<div class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-white" style="background: #ef4444; font-size: 0.8rem; font-weight: bold;">✕</div>`;
+                } else {
+                    iconHtml = `<div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0" style="background: var(--color-primary-100); color: var(--color-primary-700);">@</div>`;
+                }
+
+                const card = document.createElement('div');
+                card.className = 'px-4 py-3 border-b hover:bg-gray-50 transition-colors';
+                card.style.cssText = 'border-color: var(--color-border); background: #f0f9ff;';
+                card.innerHTML = `
+                    <div class="flex items-start gap-3">
+                        ${iconHtml}
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm" style="color: var(--color-text-primary);">${e.text}</p>
+                            <p class="text-xs mt-0.5" style="color: var(--color-text-muted);">${e.created_at}</p>
+                        </div>
+                    </div>
+                `;
+                listContainer.prepend(card);
+            }
+
+            // Reset seen flag so badge stays
+            notificationsSeen = false;
+        });
+}
+@endauth
 </script>
 
 @livewireScripts

@@ -11,6 +11,11 @@ Broadcast::channel('App.Models.User.{id}', function (User $user, int $id) {
     return (int) $user->user_id === (int) $id;
 });
 
+// Private channel for user-specific real-time notifications
+Broadcast::channel('user.{id}', function (User $user, int $id) {
+    return (int) $user->user_id === (int) $id;
+});
+
 // Private channel for workspace-wide events (task updates, member changes)
 Broadcast::channel('workspace.{workspaceId}', function (User $user, int $workspaceId) {
     return WorkspaceMember::where('workspace_id', $workspaceId)
