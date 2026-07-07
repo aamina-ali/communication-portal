@@ -58,9 +58,10 @@
             <div class="flex items-center gap-2 py-1">
                 <div class="avatar-initials w-6 h-6 text-xs flex-shrink-0" style="font-size: 0.65rem;">
                     @if($member->user->avatar_url)
-                        <img src="{{ $member->user->avatar_url }}" alt="{{ $member->user->username }}" class="avatar w-6 h-6">
+                        <img src="{{ $member->user->avatar_url }}" alt="{{ $member->user->username }}" class="avatar w-6 h-6" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';">
+                        <span style="display: none;">{{ strtoupper(substr($member->user->username, 0, 1)) }}</span>
                     @else
-                        {{ strtoupper(substr($member->user->username, 0, 1)) }}
+                        <span>{{ strtoupper(substr($member->user->username, 0, 1)) }}</span>
                     @endif
                 </div>
                 <span class="text-xs truncate flex-1" style="color: var(--color-sidebar-text);">{{ $member->user->username }}</span>
@@ -226,9 +227,10 @@
                             <div class="relative flex-shrink-0">
                                 <div class="avatar-initials w-8 h-8 text-sm flex items-center justify-center">
                                     @if($member->user->avatar_url)
-                                        <img src="{{ $member->user->avatar_url }}" alt="{{ $member->user->username }}" class="avatar w-8 h-8 rounded-full">
+                                        <img src="{{ $member->user->avatar_url }}" alt="{{ $member->user->username }}" class="avatar w-8 h-8 rounded-full" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';">
+                                        <span style="display: none;">{{ strtoupper(substr($member->user->username, 0, 1)) }}</span>
                                     @else
-                                        {{ strtoupper(substr($member->user->username, 0, 1)) }}
+                                        <span>{{ strtoupper(substr($member->user->username, 0, 1)) }}</span>
                                     @endif
                                 </div>
                                 @if($member->user->isOnline())

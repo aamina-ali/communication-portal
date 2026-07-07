@@ -4,6 +4,12 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+
+    <!-- Reverb Broadcasting Meta Tags -->
+    <meta name="reverb-key" content="{{ config('reverb.apps.apps.0.key') }}">
+    <meta name="reverb-host" content="{{ config('reverb.apps.apps.0.options.host') ?? request()->getHost() }}">
+    <meta name="reverb-port" content="{{ config('reverb.apps.apps.0.options.port') ?? (request()->secure() ? 443 : 80) }}">
+    <meta name="reverb-scheme" content="{{ config('reverb.apps.apps.0.options.scheme') ?? (request()->secure() ? 'https' : 'http') }}">
     <title>{{ config('app.name', 'Synapse') }}</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">

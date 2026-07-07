@@ -1,4 +1,4 @@
-﻿<div class="flex flex-col flex-1 min-h-0" wire:poll.2s="refreshMessages">
+<div class="flex flex-col flex-1 min-h-0" wire:poll.2s="refreshMessages">
     {{-- Messages list --}}
     <div id="messages-container"
          class="flex-1 overflow-y-auto p-4 space-y-1"
@@ -27,9 +27,10 @@
             <div class="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5"
                  style="background: {{ $isMine ? 'var(--color-accent-600)' : 'var(--color-accent-700)' }}; color: white;">
                 @if(!empty($msg['sender']['avatar_url']))
-                    <img src="{{ $msg['sender']['avatar_url'] }}" alt="{{ $msg['sender']['username'] }}" class="w-full h-full object-cover">
+                    <img src="{{ $msg['sender']['avatar_url'] }}" alt="{{ $msg['sender']['username'] }}" class="w-full h-full object-cover" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';">
+                    <span style="display: none;">{{ strtoupper(substr($msg['sender']['username'] ?? '?', 0, 1)) }}</span>
                 @else
-                    {{ strtoupper(substr($msg['sender']['username'] ?? '?', 0, 1)) }}
+                    <span>{{ strtoupper(substr($msg['sender']['username'] ?? '?', 0, 1)) }}</span>
                 @endif
             </div>
             <div class="min-w-0 max-w-xs lg:max-w-md flex flex-col {{ $isMine ? 'items-end' : 'items-start' }} flex-1">

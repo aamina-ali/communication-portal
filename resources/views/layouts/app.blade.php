@@ -5,6 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="description" content="Synapse — Enterprise Communication & Collaboration platform for teams.">
+
+    <!-- Reverb Broadcasting Meta Tags -->
+    <meta name="reverb-key" content="{{ config('reverb.apps.apps.0.key') }}">
+    <meta name="reverb-host" content="{{ config('reverb.apps.apps.0.options.host') ?? request()->getHost() }}">
+    <meta name="reverb-port" content="{{ config('reverb.apps.apps.0.options.port') ?? (request()->secure() ? 443 : 80) }}">
+    <meta name="reverb-scheme" content="{{ config('reverb.apps.apps.0.options.scheme') ?? (request()->secure() ? 'https' : 'http') }}">
     <title>{{ config('app.name', 'Synapse') }} — {{ $title ?? 'Dashboard' }}</title>
 
     <!-- Fonts -->
@@ -239,9 +245,10 @@
                class="w-9 h-9 rounded-full overflow-hidden flex items-center justify-center text-xs font-bold hover:ring-2 hover:ring-blue-400 transition-all"
                style="background: var(--color-accent-700); color: white;">
                 @if(auth()->user()->avatar_url)
-                    <img src="{{ auth()->user()->avatar_url }}" alt="{{ auth()->user()->username }}" class="w-full h-full object-cover">
+                    <img src="{{ auth()->user()->avatar_url }}" alt="{{ auth()->user()->username }}" class="w-full h-full object-cover" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';">
+                    <span style="display: none;">{{ strtoupper(substr(auth()->user()->username, 0, 2)) }}</span>
                 @else
-                    {{ strtoupper(substr(auth()->user()->username, 0, 2)) }}
+                    <span>{{ strtoupper(substr(auth()->user()->username, 0, 2)) }}</span>
                 @endif
             </a>
 

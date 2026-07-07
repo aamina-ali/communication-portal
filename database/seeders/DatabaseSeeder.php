@@ -36,7 +36,7 @@ class DatabaseSeeder extends Seeder
             'email' => 'ali@example.com',
             'password_hash' => Hash::make('hash123'),
             'is_active' => true,
-            'avatar_url' => 'http://img.com/ali.jpg',
+            'avatar_url' => null,
         ]);
 
         User::create([
@@ -45,7 +45,7 @@ class DatabaseSeeder extends Seeder
             'email' => 'sara@example.com',
             'password_hash' => Hash::make('hash456'),
             'is_active' => true,
-            'avatar_url' => 'http://img.com/sara.jpg',
+            'avatar_url' => null,
         ]);
 
         User::create([
