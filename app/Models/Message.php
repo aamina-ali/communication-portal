@@ -55,12 +55,12 @@ class Message extends Model
 
     public function files(): MorphMany
     {
-        return $this->morphMany(File::class, 'attachable', 'attachable_type', 'attachable_id', 'file_id');
+        return $this->morphMany(File::class, 'attachable');
     }
 
     public function pins(): MorphMany
     {
-        return $this->morphMany(PinnedMessage::class, 'pinnable', 'pinnable_type', 'pinnable_id', 'pin_id');
+        return $this->morphMany(PinnedMessage::class, 'pinnable');
     }
 
     public function isPinned(): bool
