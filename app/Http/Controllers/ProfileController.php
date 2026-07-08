@@ -69,7 +69,7 @@ class ProfileController extends Controller
                     $validated['avatar_url'] = $cloudinary->upload($request->file('avatar'), 'avatars');
                 } else {
                     $path = $request->file('avatar')->store('avatars', 'public');
-                    $validated['avatar_url'] = Storage::disk('public')->url($path);
+                    $validated['avatar_url'] = '/storage/' . ltrim($path, '/');
                 }
             } catch (\Throwable $e) {
                 report($e);

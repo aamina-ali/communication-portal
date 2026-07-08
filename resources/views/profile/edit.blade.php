@@ -111,9 +111,10 @@
                             <label class="form-label">Avatar</label>
                             <div class="flex items-center gap-4">
                                 <div id="avatar-preview-wrap" class="w-16 h-16 rounded-full overflow-hidden flex items-center justify-center text-lg font-bold flex-shrink-0"
-                                     style="background: var(--color-accent-600); color: white;">
+                                    style="background: var(--color-accent-600); color: white;">
                                     @if($user->avatar_url)
-                                        <img id="avatar-preview-img" src="{{ $user->avatar_url }}" alt="{{ $user->username }}" class="w-full h-full object-cover">
+                                        <img id="avatar-preview-img" src="{{ $user->avatar_url }}" alt="{{ $user->username }}" class="w-full h-full object-cover" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';">
+                                        <span id="avatar-preview-initials" style="display: none;">{{ strtoupper(substr($user->username, 0, 2)) }}</span>
                                     @else
                                         <span id="avatar-preview-initials">{{ strtoupper(substr($user->username, 0, 2)) }}</span>
                                     @endif

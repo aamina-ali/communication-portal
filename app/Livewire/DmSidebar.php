@@ -7,6 +7,7 @@ namespace App\Livewire;
 use App\Models\DirectMessage;
 use App\Models\DmConversation;
 use Illuminate\Contracts\View\View;
+use Illuminate\Support\Facades\Cache;
 use Livewire\Attributes\On;
 use Livewire\Component;
 
@@ -26,11 +27,29 @@ class DmSidebar extends Component
     {
         $userId = auth()->user()->user_id;
 
-        $conversations = DmConversation::whereHas('dmParticipants', fn($q) => $q->where('user_id', $userId))
-            ->with(['dmParticipants.user'])
+        $conversations = DmConversation::query()
+            ->join('dm_participant as current_participant', 'dm_conversation.conversation_id', '=', 'current_participant.conversation_id')
+            ->where('current_participant.user_id', $userId)
+            ->select('dm_conversation.*')
+            ->distinct()
+            ->with([
+                'dmParticipants:dm_participant_id,conversation_id,user_id',
+                'dmParticipants.user:user_id,username,avatar_url',
+            ])
             ->get();
 
         $conversationIds = $conversations->pluck('conversation_id');
+        $otherUserIds = $conversations
+            ->flatMap(fn (DmConversation $conv) => $conv->dmParticipants)
+            ->pluck('user_id')
+            ->reject(fn ($participantId) => (int) $participantId === $userId)
+            ->unique()
+            ->values();
+        $onlineStates = $otherUserIds->isEmpty()
+            ? collect()
+            : collect(Cache::many($otherUserIds->mapWithKeys(
+                fn ($participantId) => ['user-online-' . $participantId => false]
+            )->all()));
 
         $unreadCounts = $conversationIds->isEmpty()
             ? collect()
@@ -49,7 +68,7 @@ class DmSidebar extends Component
                 ->pluck('unread_count', 'direct_message.conversation_id');
 
         $this->conversations = $conversations
-            ->map(function (DmConversation $conv) use ($userId, $unreadCounts) {
+            ->map(function (DmConversation $conv) use ($userId, $unreadCounts, $onlineStates) {
                 $otherUser = $conv->dmParticipants
                     ->firstWhere('user_id', '!=', $userId)?->user;
 
@@ -57,7 +76,7 @@ class DmSidebar extends Component
                     'conversation_id' => $conv->conversation_id,
                     'other_username'  => $otherUser?->username ?? 'Unknown',
                     'other_avatar'    => $otherUser?->avatar_url,
-                    'is_online'       => $otherUser ? $otherUser->isOnline() : false,
+                    'is_online'       => $otherUser ? (bool) $onlineStates->get('user-online-' . $otherUser->user_id) : false,
                     'unread'          => (int) ($unreadCounts[$conv->conversation_id] ?? 0),
                     'url'             => route('dms.show', $conv),
                 ];

@@ -30,9 +30,12 @@ class ChannelSidebar extends Component
     {
         $userId = auth()->user()->user_id;
 
-        $channels = Channel::where('workspace_id', $this->workspace->workspace_id)
-            ->whereHas('users', fn($q) => $q->where('channel_user.user_id', $userId))
-            ->select('channel_id', 'workspace_id', 'channel_name', 'is_private')
+        $channels = Channel::query()
+            ->join('channel_user', 'channel.channel_id', '=', 'channel_user.channel_id')
+            ->where('channel.workspace_id', $this->workspace->workspace_id)
+            ->where('channel_user.user_id', $userId)
+            ->select('channel.channel_id', 'channel.workspace_id', 'channel.channel_name', 'channel.is_private')
+            ->distinct()
             ->get();
 
         $channelIds = $channels->pluck('channel_id');

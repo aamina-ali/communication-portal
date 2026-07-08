@@ -130,7 +130,7 @@
                                 @if($notif->type === 'join_request' || $notif->type === 'workspace_invite')
                                     <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
                                          style="background: var(--color-accent-100); color: var(--color-accent-700);">
-                                        {{ strtoupper(substr($notif->sender->username ?? '?', 0, 1)) }}
+                                        {{ strtoupper(substr($notif->sender_username ?? '?', 0, 1)) }}
                                     </div>
                                 @elseif($notif->type === 'join_accepted' || $notif->type === 'workspace_invite_accepted')
                                     <div class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-white"
@@ -161,11 +161,11 @@
                                         @endphp
                                         @if($joinReq)
                                         <div class="flex gap-2 mt-2">
-                                            <form method="POST" action="{{ route('workspaces.join-requests.approve', [$notif->workspace, $joinReq]) }}">
+                                            <form method="POST" action="{{ route('workspaces.join-requests.approve', [$notif->workspace_id, $joinReq]) }}">
                                                 @csrf
                                                 <button type="submit" class="btn btn-sm btn-primary">Accept</button>
                                             </form>
-                                            <form method="POST" action="{{ route('workspaces.join-requests.reject', [$notif->workspace, $joinReq]) }}">
+                                            <form method="POST" action="{{ route('workspaces.join-requests.reject', [$notif->workspace_id, $joinReq]) }}">
                                                 @csrf
                                                 <button type="submit" class="btn btn-sm btn-secondary" style="color: #dc2626;">Decline</button>
                                             </form>
@@ -179,11 +179,11 @@
                                         @endphp
                                         @if($joinReq)
                                         <div class="flex gap-2 mt-2">
-                                            <form method="POST" action="{{ route('workspaces.invite.accept', $notif->workspace) }}">
+                                            <form method="POST" action="{{ route('workspaces.invite.accept', $notif->workspace_id) }}">
                                                 @csrf
                                                 <button type="submit" class="btn btn-sm btn-primary">Accept</button>
                                             </form>
-                                            <form method="POST" action="{{ route('workspaces.invite.reject', $notif->workspace) }}">
+                                            <form method="POST" action="{{ route('workspaces.invite.reject', $notif->workspace_id) }}">
                                                 @csrf
                                                 <button type="submit" class="btn btn-sm btn-secondary" style="color: #dc2626;">Decline</button>
                                             </form>

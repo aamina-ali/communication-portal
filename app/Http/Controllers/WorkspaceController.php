@@ -13,6 +13,7 @@ use App\Services\CloudinaryImageService;
 use App\Enums\WorkspaceRole;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
@@ -27,12 +28,16 @@ class WorkspaceController extends Controller
 
         $myWorkspaces = $request->user()
             ->workspaces()
+            ->select('workspace.workspace_id', 'workspace.name', 'workspace.description', 'workspace.avatar_url')
             ->withCount('workspaceMembers')
             ->get();
 
         $otherWorkspaces = Workspace::whereDoesntHave('workspaceMembers', function ($q) use ($userId) {
             $q->where('user_id', $userId);
-        })->withCount('workspaceMembers')->get();
+        })
+            ->select('workspace_id', 'name', 'description', 'avatar_url')
+            ->withCount('workspaceMembers')
+            ->get();
 
         // Map existing join request statuses for other workspaces
         $pendingRequestIds = WorkspaceJoinRequest::where('user_id', $userId)
@@ -102,21 +107,24 @@ class WorkspaceController extends Controller
         $members = $workspace->workspaceMembers()
             ->with('user:user_id,username,name,email,avatar_url')
             ->get();
+        $onlineUserIds = $this->onlineUserIdsFor($members);
 
         // Pending join requests (for admin display)
         $joinRequests = $isAdmin
             ? WorkspaceJoinRequest::where('workspace_id', $workspace->workspace_id)
                 ->where('status', 'pending')
                 ->with('user:user_id,username,email')
+                ->select('id', 'workspace_id', 'user_id', 'status', 'created_at')
                 ->get()
             : collect();
 
         // Check if current user has a pending request
         $myRequest = WorkspaceJoinRequest::where('workspace_id', $workspace->workspace_id)
             ->where('user_id', $userId)
+            ->select('id', 'workspace_id', 'user_id', 'status')
             ->first();
 
-        return view('workspaces.show', compact('workspace', 'channels', 'members', 'isMember', 'isAdmin', 'joinRequests', 'myRequest'));
+        return view('workspaces.show', compact('workspace', 'channels', 'members', 'onlineUserIds', 'isMember', 'isAdmin', 'joinRequests', 'myRequest'));
     }
 
     /**
@@ -343,6 +351,26 @@ class WorkspaceController extends Controller
             ])
             ->select('channel_id', 'workspace_id', 'channel_name', 'is_private')
             ->get();
+    }
+
+    private function onlineUserIdsFor($members): array
+    {
+        $userIds = $members
+            ->pluck('user_id')
+            ->unique()
+            ->values();
+
+        if ($userIds->isEmpty()) {
+            return [];
+        }
+
+        return collect(Cache::many($userIds->mapWithKeys(
+            fn ($userId) => ['user-online-' . $userId => false]
+        )->all()))
+            ->filter()
+            ->keys()
+            ->map(fn (string $key): int => (int) str_replace('user-online-', '', $key))
+            ->all();
     }
 
     /**

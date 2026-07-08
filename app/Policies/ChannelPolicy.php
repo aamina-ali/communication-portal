@@ -53,11 +53,11 @@ class ChannelPolicy
     public function update(User $user, Channel $channel): bool
     {
         // Must be a workspace admin
-        $member = WorkspaceMember::where('workspace_id', $channel->workspace_id)
+        $role = WorkspaceMember::where('workspace_id', $channel->workspace_id)
             ->where('user_id', $user->user_id)
-            ->first();
+            ->value('role');
 
-        return $member && $member->role === WorkspaceRole::ADMIN;
+        return $role === WorkspaceRole::ADMIN->value;
     }
 
     public function delete(User $user, Channel $channel): bool

@@ -16,7 +16,9 @@ class TaskController extends Controller
     public function create(Channel $channel): View
     {
         $this->authorize('sendMessage', $channel);
-        $members = $channel->users()->get();
+        $members = $channel->users()
+            ->select('users.user_id', 'users.username')
+            ->get();
 
         return view('tasks.create', compact('channel', 'members'));
     }
@@ -50,7 +52,9 @@ class TaskController extends Controller
     public function edit(Channel $channel, Task $task): View
     {
         $this->authorize('update', $task);
-        $members = $channel->users()->get();
+        $members = $channel->users()
+            ->select('users.user_id', 'users.username')
+            ->get();
 
         return view('tasks.edit', compact('channel', 'task', 'members'));
     }

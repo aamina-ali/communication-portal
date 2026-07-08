@@ -28,8 +28,12 @@ class NotificationController extends Controller
     public function index(Request $request): JsonResponse
     {
         $notifications = Notification::where('user_id', $request->user()->user_id)
-            ->with(['sender', 'workspace'])
-            ->latest()
+            ->with([
+                'sender:user_id,username,avatar_url',
+                'workspace:workspace_id,name',
+            ])
+            ->select('id', 'user_id', 'sender_id', 'type', 'workspace_id', 'channel_id', 'message_id', 'text', 'is_seen', 'created_at')
+            ->latest('created_at')
             ->limit(30)
             ->get();
 

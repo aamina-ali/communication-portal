@@ -26,11 +26,11 @@ class WorkspacePolicy
      */
     public function update(User $user, Workspace $workspace): bool
     {
-        $member = WorkspaceMember::where('workspace_id', $workspace->workspace_id)
+        $role = WorkspaceMember::where('workspace_id', $workspace->workspace_id)
             ->where('user_id', $user->user_id)
-            ->first();
+            ->value('role');
 
-        return $member && $member->role === WorkspaceRole::ADMIN;
+        return $role === WorkspaceRole::ADMIN->value;
     }
 
     /**

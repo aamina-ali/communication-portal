@@ -255,14 +255,11 @@ class DirectMessageWindow extends Component
             now()->addMinute(),
             fn () => $this->conversation->dmParticipants()->pluck('user_id')->all()
         );
-        $typingNames = [];
-        foreach ($participants as $participantId) {
-            if ((int) $participantId === $userId) continue;
-            $name = Cache::get('typing-dm-' . $this->conversation->conversation_id . '-' . $participantId);
-            if ($name) {
-                $typingNames[] = $name;
-            }
-        }
+        $typingKeys = collect($participants)
+            ->reject(fn ($participantId) => (int) $participantId === $userId)
+            ->mapWithKeys(fn ($participantId) => ['typing-dm-' . $this->conversation->conversation_id . '-' . $participantId => null])
+            ->all();
+        $typingNames = array_values(array_filter($typingKeys ? Cache::many($typingKeys) : []));
 
         if (!empty($typingNames)) {
             $this->typingUser = implode(', ', $typingNames);

@@ -52,36 +52,43 @@ class AppServiceProvider extends ServiceProvider
                 ->select('workspace.workspace_id', 'workspace.name')
                 ->get();
 
-            $conversationIds = DmConversation::whereHas(
-                'dmParticipants',
-                fn ($query) => $query->where('user_id', $userId)
-            )->pluck('conversation_id');
-
-            $layoutTotalUnreadDms = $conversationIds->isEmpty()
-                ? 0
-                : DirectMessage::query()
-                    ->leftJoin('dm_read_state as drs', function ($join) use ($userId): void {
-                        $join->on('direct_message.conversation_id', '=', 'drs.conversation_id')
-                            ->where('drs.user_id', '=', $userId);
-                    })
-                    ->whereIn('direct_message.conversation_id', $conversationIds)
-                    ->where(function ($query): void {
-                        $query->whereNull('drs.last_read_message_id')
-                            ->orWhereColumn('direct_message.dm_message_id', '>', 'drs.last_read_message_id');
-                    })
-                    ->count();
+            $layoutTotalUnreadDms = DirectMessage::query()
+                ->join('dm_participant as dp', 'direct_message.conversation_id', '=', 'dp.conversation_id')
+                ->leftJoin('dm_read_state as drs', function ($join) use ($userId): void {
+                    $join->on('direct_message.conversation_id', '=', 'drs.conversation_id')
+                        ->where('drs.user_id', '=', $userId);
+                })
+                ->where('dp.user_id', $userId)
+                ->where(function ($query): void {
+                    $query->whereNull('drs.last_read_message_id')
+                        ->orWhereColumn('direct_message.dm_message_id', '>', 'drs.last_read_message_id');
+                })
+                ->distinct('direct_message.dm_message_id')
+                ->count('direct_message.dm_message_id');
 
             $layoutNotifCount = Notification::where('user_id', $userId)
                 ->where('is_seen', false)
                 ->count();
 
-            $layoutUserNotifications = Notification::where('user_id', $userId)
-                ->with([
-                    'sender:user_id,username,avatar_url',
-                    'workspace:workspace_id,name',
-                    'channel:channel_id,channel_name',
+            $layoutUserNotifications = Notification::query()
+                ->leftJoin('users as sender', 'notifications.sender_id', '=', 'sender.user_id')
+                ->leftJoin('workspace as notif_workspace', 'notifications.workspace_id', '=', 'notif_workspace.workspace_id')
+                ->where('notifications.user_id', $userId)
+                ->select([
+                    'notifications.id',
+                    'notifications.user_id',
+                    'notifications.sender_id',
+                    'notifications.type',
+                    'notifications.workspace_id',
+                    'notifications.channel_id',
+                    'notifications.message_id',
+                    'notifications.text',
+                    'notifications.is_seen',
+                    'notifications.created_at',
+                    'sender.username as sender_username',
+                    'notif_workspace.name as workspace_name',
                 ])
-                ->latest()
+                ->latest('notifications.created_at')
                 ->limit(15)
                 ->get();
 
@@ -91,15 +98,12 @@ class AppServiceProvider extends ServiceProvider
 
             $layoutJoinRequests = collect();
             if ($joinRequestPairs->isNotEmpty()) {
+                $joinWorkspaceIds = $joinRequestPairs->pluck('workspace_id')->unique();
+                $joinSenderIds = $joinRequestPairs->pluck('sender_id')->unique();
+
                 $layoutJoinRequests = WorkspaceJoinRequest::where('status', 'pending')
-                    ->where(function ($query) use ($joinRequestPairs): void {
-                        foreach ($joinRequestPairs as $notification) {
-                            $query->orWhere(function ($pairQuery) use ($notification): void {
-                                $pairQuery->where('workspace_id', $notification->workspace_id)
-                                    ->where('user_id', $notification->sender_id);
-                            });
-                        }
-                    })
+                    ->whereIn('workspace_id', $joinWorkspaceIds)
+                    ->whereIn('user_id', $joinSenderIds)
                     ->get()
                     ->keyBy(fn (WorkspaceJoinRequest $request): string => $request->workspace_id . ':' . $request->user_id);
             }

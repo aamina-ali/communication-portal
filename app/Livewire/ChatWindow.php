@@ -287,14 +287,11 @@ class ChatWindow extends Component
             now()->addMinute(),
             fn () => $this->channel->workspace->workspaceMembers()->pluck('user_id')->all()
         );
-        $typingNames = [];
-        foreach ($members as $memberId) {
-            if ((int) $memberId === $userId) continue;
-            $name = Cache::get('typing-channel-' . $this->channel->channel_id . '-' . $memberId);
-            if ($name) {
-                $typingNames[] = $name;
-            }
-        }
+        $typingKeys = collect($members)
+            ->reject(fn ($memberId) => (int) $memberId === $userId)
+            ->mapWithKeys(fn ($memberId) => ['typing-channel-' . $this->channel->channel_id . '-' . $memberId => null])
+            ->all();
+        $typingNames = array_values(array_filter($typingKeys ? Cache::many($typingKeys) : []));
 
         if (!empty($typingNames)) {
             $this->typingUser = implode(', ', $typingNames);

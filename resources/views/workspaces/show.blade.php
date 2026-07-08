@@ -233,7 +233,7 @@
                                         <span>{{ strtoupper(substr($member->user->username, 0, 1)) }}</span>
                                     @endif
                                 </div>
-                                @if($member->user->isOnline())
+                                @if(in_array($member->user_id, $onlineUserIds ?? [], true))
                                     <span class="absolute bottom-0 right-0 block h-2 w-2 rounded-full ring-1 ring-white" style="background-color: #22c55e;"></span>
                                 @else
                                     <span class="absolute bottom-0 right-0 block h-2 w-2 rounded-full ring-1 ring-white" style="background-color: #9ca3af;"></span>

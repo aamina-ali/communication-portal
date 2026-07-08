@@ -33,11 +33,11 @@ class TaskPolicy
 
         $channel = $task->channel;
         if ($channel) {
-            $member = WorkspaceMember::where('workspace_id', $channel->workspace_id)
+            $role = WorkspaceMember::where('workspace_id', $channel->workspace_id)
                 ->where('user_id', $user->user_id)
-                ->first();
+                ->value('role');
 
-            return $member && $member->role === WorkspaceRole::ADMIN;
+            return $role === WorkspaceRole::ADMIN->value;
         }
 
         return false;

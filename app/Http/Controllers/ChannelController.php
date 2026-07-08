@@ -20,6 +20,7 @@ class ChannelController extends Controller
 
         // Load workspace members so we can select who to add to private channels
         $members = $workspace->workspaceMembers()
+            ->select('member_id', 'workspace_id', 'user_id', 'role')
             ->with('user:user_id,username')
             ->get();
 
@@ -79,7 +80,7 @@ class ChannelController extends Controller
     {
         $this->authorize('view', $channel);
 
-        $channel->load('workspace');
+        $channel->load('workspace:workspace_id,name');
 
         // Auto-join the authenticated user to public channels so they can send messages.
         // Private channels require an explicit invite via the create flow.

@@ -28,7 +28,8 @@ class TaskBoard extends Component
     public function loadTasks(): void
     {
         $tasks = Task::where('channel_id', $this->channel->channel_id)
-            ->with(['creator', 'assignee'])
+            ->with(['assignee:user_id,username'])
+            ->select('task_id', 'channel_id', 'created_by', 'assigned_to', 'title', 'description', 'status', 'due_date')
             ->get();
 
         $this->columns = [
